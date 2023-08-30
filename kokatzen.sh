@@ -330,7 +330,7 @@ mount -o noatime,nodiratime,compres-forces=zstd,commit=120,space_cache,ssd,disca
 }
 
 function Formateando_swap(){
-	echo  " \033[0;91m
+	echo -e " \033[0;91m
 ######################################################
 # Encryptando Particion Swap
 # https://wiki.archlinux.org/title/swap
