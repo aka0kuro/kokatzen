@@ -298,9 +298,9 @@ function Formateando_root(){
 "
 
 echo -e "\033[1;97mEncryptando particon root ...\033[0m"
-ccryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 --key-size 512 --iter-time 2000 --pbkdf argon2id --hash sha3-512 "$root_part"
+cryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 --key-size 512 --iter-time 2000 --pbkdf argon2id --hash sha3-512 $root_part
 echo -e "\033[1;97mDesencriptando la particion root ...\033[0m"
-cryptsetup open "$root_part" cryptroot
+cryptsetup open $root_part cryptroot
 
 echo -e "\033[1;97mFormateando particion root en BTRFS...\033[0m"
 mkfs.btrfs -L ROOT -n 32k /dev/mapper/cryptroot
