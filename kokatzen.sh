@@ -265,7 +265,7 @@ wipefs --all $root_part 2> /dev/null
 
 echo -e "\033[1;92m\n\nSeleccione el número de partición swap: \033[0m"
 echo -e "\033[1;97m$partitions\033[0m"
-read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" swap_id
+read -p "Ingrese el número:" swap_id
 swap_part=$(echo "$partitions" | awk "\$1 == $swap_id { print \$2}")
 
 cryptsetup erase $swap_part 2> /dev/null
@@ -357,10 +357,10 @@ echo -e "\033[1;97mPaquetes a instalar: base \nbase-devel \nlinux-zen  \nlinux-z
 read -p "`echo -e '\033[1;92m¿Quiere Instalar paquetes adicionales a la instalacion? [S/n] \033[0m'`" add
 case $add in 
 	[sS] ) 
-		read -p "`echo -e '\033[1;92mAñade paquetes adiccionales(con un espacio entre ellos): \033[0m'`" add_mas
-		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant $add_mas
-	[nN] ) echo -e "\033[1;97m\nInstalando paquetes base033[0m";
-		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant 
+		read "Añade paquetes adiccionales(con un espacio entre ellos):" add_mas;
+		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant $add_mas;;
+	[nN] ) echo -e "\033[1;97m\nInstalando paquetes base\033[0m";
+		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant;;
 			
 	* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
 		sleep 03; clear; Inicio; Instalacion;;
