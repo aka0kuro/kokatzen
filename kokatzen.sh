@@ -243,7 +243,7 @@ device=$(echo "$devices" | awk "\$1 == $device_id { print \$2}")
 
 read -p "`echo -e '\033[1;92m\nIngrese la dimensión de la swap: \033[0m'`"  swap
 
-sgdisk --clear --new=1:0:+512MiB --typecode=1:ef00 --change-name=1:EFI --new=2:0:+"$swap"GiB --typecode=2:8200 --change-name=2:cryptswap --new=3:0:0 --typecode=3:8300 --change-name=3:cryptsystem $device >/dev/null 2>&1
+sgdisk --clear --new=1:0:+512MiB --typecode=1:ef00 --change-name=1:EFI --new=2:0:+"$swap"GiB --typecode=2:8200 --change-name=2:cryptswap --new=3:0:0 --typecode=3:8300 --change-name=3:cryptsystem $device
 
 partitions=$(lsblk --paths --list --noheadings --output=name,size,model | grep --invert-match "loop" | cat --number)
 
