@@ -290,7 +290,7 @@ mkfs.fat -n boot -F 32 "$efi_part" >/dev/null 2>&1
 }
 
 function Formateando_root(){
-	echo " \033[0;91m
+	echo -e " \033[0;91m
 ######################################################
 # Encryptando Particion Root
 # https://wiki.archlinux.org/title/Dm-crypt/Device_encryption
