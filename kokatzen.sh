@@ -77,15 +77,6 @@ On_IWhite='\033[0;107m'   # White
 Color_Off='\033[0m'       # Text Reset
 
 ######################################################
-# Variables
-######################################################
-BTRFS_MOUNT_OPTS="ssd,noatime,compress=zstd:1,space_cache=v2,autodefrag"
-
-KERNEL_PKGS="linux"
-BASE_PKGS="base sudo linux-firmware"
-FS_PKGS="dosfstools btrfs-progs"
-
-######################################################
 # Inicio del script
 ######################################################
 
@@ -135,11 +126,9 @@ function Verificar_UEFI(){
 	echo -e "\n"
 	read -p "`echo -e '\033[1;92m¿Quiere configurar un arranque seguro con su propia clave? [S/n] \033[0m'`" secure_boot
 
-	# compruebe que el firmware está en el modo de configuración
+
 	case $secure_boot in 
 		[sS] ) 
-			# La salida de estado de bootctl debería tener
-			# Arranque seguro: deshabilitado (configuración)
 			setup_mode=$(bootctl status | grep -E "Secure Boot.*setup" | wc -l)
 			if [[ $setup_mode -ne 1 ]] ; then
 				echo "El firmware no está en el modo de configuración. Verifique la BIOS."
@@ -252,70 +241,304 @@ echo -e "\033[1;97m$devices\033[0m"
 read -p "`echo -e '\033[1;92mIngrese el número del disco: \033[0m'`"  device_id
 device=$(echo "$devices" | awk "\$1 == $device_id { print \$2}")
 
-# Dimensión de swap
 read -p "`echo -e '\033[1;92m\nIngrese la dimensión de la swap: \033[0m'`"  swap
 
-# Creamos las particiones
 sgdisk --clear --new=1:0:+512MiB --typecode=1:ef00 --change-name=1:EFI --new=2:0:+"$swap"GiB --typecode=2:8200 --change-name=2:cryptswap --new=3:0:0 --typecode=3:8300 --change-name=3:cryptsystem $device >/dev/null 2>&1
 
 partitions=$(lsblk --paths --list --noheadings --output=name,size,model | grep --invert-match "loop" | cat --number)
 
-# EFI particion
 echo -e "\033[1;92m\n\nSeleccione el número de partición EFI: \033[0m"
 echo -e "\033[1;97m$partitions\033[0m"
 read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" efi_id
 efi_part=$(echo "$partitions" | awk "\$1 == $efi_id { print \$2}")
 
-# root particion
 echo -e "\033[1;92m\n\nSeleccione el número de partición root: \033[0m"
 echo -e "\033[1;97m$partitions\033[0m"
 read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" root_id
 root_part=$(echo "$partitions" | awk "\$1 == $root_id { print \$2}")
 
-# Borrar el encabezado LUKS existente
-# https://wiki.archlinux.org/title/Dm-crypt/Drive_preparation#Wipe_LUKS_header
-# Borrar todas las claves
 cryptsetup erase $root_part 2> /dev/null
-# Asegúrese de que no queden ranuras activas
+
 cryptsetup luksDump $root_part 2> /dev/null
-# Eliminar el encabezado LUKS para evitar que cryptsetup lo detecte
+
 wipefs --all $root_part 2> /dev/null
 
-# swap partition
-# swap is important, see [In defence of swap](https://chrisdown.name/2018/01/02/in-defence-of-swap.html)
 echo -e "\033[1;92m\n\nSeleccione el número de partición swap: \033[0m"
 echo -e "\033[1;97m$partitions\033[0m"
 read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" swap_id
-swap_part=$(echo "$partitions" | awk "\$1 == $swap_id { print \$2}") || swap_part=""
+swap_part=$(echo "$partitions" | awk "\$1 == $swap_id { print \$2}")
 
-# Wipe existing LUKS header
 cryptsetup erase $swap_part 2> /dev/null
 cryptsetup luksDump $swap_part 2> /dev/null
 wipefs --all $swap_part 2> /dev/null
 
 }
 
-function formateando(){
+function Formateando_UEFI(){
 
 	echo -e " \033[0;91m
 ######################################################
-# Format the partitions
+# Formateando Particiones
 # https://wiki.archlinux.org/title/Installation_guide#Format_the_partitions
+######################################################\033[0m
+"
+echo -e "\033[1;97mFormateando Particion EFI...\033[0m"
+echo -e "\033[1;97mCorriendo commando: mkfs.fat -n boot -F 32 $efi_part\033[0m"
+
+mkfs.fat -n boot -F 32 "$efi_part" >/dev/null 2>&1
+
+}
+
+function Formateando_root(){
+	echo " \033[0;91m
+######################################################
+# Encryptando Particion Root
+# https://wiki.archlinux.org/title/Dm-crypt/Device_encryption
+######################################################\033[0m
+"
+
+echo -e "\033[1;97mEncryptando particon root ...\033[0m"
+ccryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 --key-size 512 --iter-time 2000 --pbkdf argon2id --hash sha3-512 "$root_part"
+echo -e "\033[1;97mDesencriptando la particion root ...\033[0m"
+cryptsetup open "$root_part" cryptroot
+
+echo -e "\033[1;97mFormateando particion root en BTRFS...\033[0m"
+mkfs.btrfs -L ROOT -n 32k /dev/mapper/cryptroot
+
+echo -e "\033[1;97mMontando particion root en /mnt...\033[0m"
+mount /dev/mapper/cryptroot /mnt
+
+echo -e "\033[1;97mCreando subvolumenes BTRFS...\033[0m"
+btrfs sub create /mnt/@
+btrfs sub create /mnt/@home
+btrfs sub create /mnt/@pkg
+btrfs sub create /mnt/@abs
+btrfs sub create /mnt/@tmp
+btrfs sub create /mnt/@srv
+btrfs sub create /mnt/@snapshots
+
+echo -e "\033[1;97mMontando subvolumenes...\033[0m"
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@,clear_cache /dev/mapper/cryptroot /mnt
+mkdir -p /mnt/{boot,home,var/cache/pacman/pkg,var/abs,var/tmp,srv,.snapshots}
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@home /dev/mapper/cryptroot /mnt/home
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@pkg /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@abs /dev/mapper/cryptroot /mnt/var/abs
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@tmp /dev/mapper/cryptroot /mnt/var/tmp
+mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@srv /dev/mapper/cryptroot /mnt/srv
+mount -o noatime,nodiratime,compres-forces=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
+
+}
+
+function Formateando_swap(){
+	echo  " \033[0;91m
+######################################################
+# Encryptando Particion Swap
+# https://wiki.archlinux.org/title/swap
+######################################################\033[0m
+"
+
+echo -e "\033[1;97mEncryptando particon swap ...\033[0m"
+cryptsetup open --type plain --key-file /dev/urandom $swap_part swap
+
+echo -e "\033[1;97mMontando swap...\033[0m"
+mkswap -L swap /dev/mapper/swap
+swapon -L swap
+
+}
+
+function Instalacion(){
+	echo  " \033[0;91m
+######################################################
+# Instalando sistema base
+# https://wiki.archlinux.org/title/installation_guide#Installation
+######################################################\033[0m
+"
+echo -e "\033[1;97mPaquetes a instalar: base \nbase-devel \nlinux-zen  \nlinux-zen-headers \nlinux-firmware \nintel-ucode \nefitools \nmkinitcpio \nnetworkmanager \nnano \nefibootmgr \nbtrfs-progs \nsudo \npolkit...\033[0m"
+read -p "`echo -e '\033[1;92m¿Quiere Instalar paquetes adicionales a la instalacion? [S/n] \033[0m'`" add
+case $add in 
+	[sS] ) 
+		read -p "`echo -e '\033[1;92mAñade paquetes adiccionales(con un espacio entre ellos): \033[0m'`" add_mas
+		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant $add_mas
+	[nN] ) echo -e "\033[1;97m\nInstalando paquetes base033[0m";
+		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant 
+			
+	* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
+		sleep 03; clear; Inicio; Instalacion;;
+esac
+
+}
+
+function fstab(){
+echo " \033[0;91m
+######################################################
+# Generando fstab
+# https://wiki.archlinux.org/title/Installation_guide#Fstab
+######################################################\033[0m
+"
+echo -e "Generando fstab ..."
+genfstab -U /mnt >> /mnt/etc/fstab
+
+}
+
+function horaria(){
+echo " \033[0;91m
+######################################################
+# Colocando zona horaria
+# https://wiki.archlinux.org/title/Installation_guide#Time_zone
+######################################################\033[0m
+"
+echo -e "Configurando zona horaria..."
+arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Madrid /etc/localtime
+arch-chroot /mnt hwclock --systohc
+
+}
+
+function idioma(){
+echo " \033[0;91m
+######################################################
+# Idioma
+# https://wiki.archlinux.org/title/Installation_guide#Localization
+######################################################\033[0m
+"
+
+echo -e "Configurando Idiomas ..."
+arch-chroot /mnt sed -i 's/^#es_ES.UTF-8 UTF-8/es_ES.UTF-8 UTF-8/' /etc/locale.gen
+arch-chroot /mnt locale-gen
+echo "LANG=es_ES.UTF-8" > /mnt/etc/locale.conf
+echo "KEYMAP=es" > /mnt/etc/vconsole.conf
+
+}
+
+function network(){
+echo " \033[0;91m
+######################################################
+# Activando NetworkManager
+# https://wiki.archlinux.org/title/NetworkManager
+######################################################\033[0m
+"
+
+arch-chroot /mnt systemctl enable systemd-resolved.service
+arch-chroot /mnt systemctl enable NetworkManager.service
+arch-chroot /mnt systemctl enable wpa_supplicant.service
+
+}
+
+
+function config(){
+	
+root_block=$root_part
+root_uuid=$(lsblk -dno UUID $root_block)
+efi_uuid=$(lsblk -dno UUID $efi_part)
+
+echo "cryptroot  UUID=$root_uuid  -  password-echo=no,x-systemd.device-timeout=0,timeout=0,no-read-workqueue,no-write-workqueue,discard"  >>  /mnt/etc/crypttab.initramfs
+
+swap_uuid=$(lsblk -dno UUID $swap_part)
+echo "cryptswap  UUID=$swap_uuid  /dev/urandom swap,offset=2048,cipher=aes-xts-plain64,size=256" >> /mnt/etc/crypttab
+sed -i "/swap/ s:^UUID=[a-zA-Z0-9-]*\s:/dev/mapper/cryptswap  :" /mnt/etc/fstab
+
+echo "Editing mkinitcpio ..."
+sed -i '/^HOOKS=/ s/ udev//' /mnt/etc/mkinitcpio.conf
+sed -i '/^HOOKS=/ s/ keymap//' /mnt/etc/mkinitcpio.conf
+sed -i '/^HOOKS=/ s/ consolefont//' /mnt/etc/mkinitcpio.conf
+sed -i '/^HOOKS=/ s/base/base systemd keyboard/' /mnt/etc/mkinitcpio.conf
+sed -i '/^HOOKS=/ s/block/sd-vconsole block sd-encrypt/' /mnt/etc/mkinitcpio.conf
+
+kernel_cmd="$kernel_cmd rootfstype=btrfs rootflags=subvol=/@ rw modprobe.blacklist=pcspkr"
+
+echo "$kernel_cmd" > /mnt/etc/kernel/cmdline_fallback
+
+arch-chroot /mnt mkdir -p /efi/EFI/Linux
+
+    # Add line ALL_microcode=(/boot/*-ucode.img)
+    sed -i '/^ALL_kver=.*/a ALL_microcode=(/boot/*-ucode.img)' /mnt/etc/mkinitcpio.d/linux-zen.preset
+    # Add Arch splash screen and add default_uki= and fallback_uki=
+    sed -i "s|^#default_options=.*|default_options=\"--splash /usr/share/systemd/bootctl/splash-arch.bmp\"\\ndefault_uki=\"/efi/EFI/Linux/ArchLinux-$KERNEL.efi\"|" /mnt/etc/mkinitcpio.d/linux-zen.preset
+    sed -i "s|^fallback_options=.*|fallback_options=\"-S autodetect --cmdline /etc/kernel/cmdline_fallback\"\\nfallback_uki=\"/efi/EFI/Linux/ArchLinux-$KERNEL-fallback.efi\"|" /mnt/etc/mkinitcpio.d/linux-zen.preset
+    # comment out default_image= and fallback_image=
+    sed -i "s|^default_image=.*|#&|" /mnt/etc/mkinitcpio.d/linux-zen.preset
+    sed -i "s|^fallback_image=.*|#&|" /mnt/etc/mkinitcpio.d/linux-zen.preset
+    
+rm /mnt/efi/initramfs-*.img 2>/dev/null
+rm /mnt/boot/initramfs-*.img 2>/dev/null
+
+echo "$kernel_cmd" > /mnt/etc/kernel/cmdline
+echo "Regenerating the initramfs ..."
+arch-chroot /mnt mkinitcpio -P
+
+if [[ $secure_boot == y ]] ; then
+    echo "
+######################################################
+# Secure boot setup
+# https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
 ######################################################
 "
-# EFI partition
-echo "Formatting EFI partition ..."
-echo "Running command: mkfs.fat -n boot -F 32 $efi_part"
-# create fat32 partition with name(label) boot
-mkfs.fat -n boot -F 32 "$efi_part"
+    arch-chroot /mnt pacman --noconfirm -S sbctl
+    echo "Creating keys ..."
+    arch-chroot /mnt sbctl create-keys
+    arch-chroot /mnt chattr -i /sys/firmware/efi/efivars/{PK,KEK,db}*
 
-# swap partition
-echo "Formatting swap partition ..."
-echo "Running command: mkswap -L swap $swap_part"
-# create swap partition with label swap
-mkswap -L swap "$swap_part"
-	
+    echo "Enroll keys ..."
+    read -p "Do you want to add Microsoft's UEFI drivers certificates to the database? [Y/n] " ms_cert
+    ms_cert="${ms_cert:-y}"
+    ms_cert="${ms_cert,,}"
+    if [[ $ms_cert == n ]] ; then
+        arch-chroot /mnt sbctl enroll-keys 2>&1
+    else
+        arch-chroot /mnt sbctl enroll-keys --microsoft 2>&1
+    fi
+    # Ignore any error and force enroll keys
+    # I need --yes-this-might-brick-my-machine for libvirt virtual machines
+    if [[ $? -ne 0 ]] ; then
+        read -p "Ignore error and enroll key anyway? [y/N] " force_enroll
+        force_enroll="${force_enroll:-n}"
+        force_enroll="${force_enroll,,}"
+        if [[ $force_enroll == y ]] ; then
+            if [[ $ms_cert == n ]] ; then
+                arch-chroot /mnt sbctl enroll-keys --yes-this-might-brick-my-machine
+            else
+                arch-chroot /mnt sbctl enroll-keys --microsoft --yes-this-might-brick-my-machine
+            fi
+        else
+            echo "Did not enroll any keys"
+            echo "Now chroot into new system and enroll keys manully with"
+            echo "sbctl enroll-keys"
+            echo "exit the chroot to continue installation"
+            arch-chroot /mnt
+        fi
+    fi
+
+    echo "Signing unified kernel image ..."
+        arch-chroot /mnt sbctl sign --save "/efi/EFI/Linux/ArchLinux-linux-zen.efi"
+        arch-chroot /mnt sbctl sign --save "/efi/EFI/Linux/ArchLinux-linux-zen-fallback.efi"
+
+fi
+
+echo "
+######################################################
+# Set up UFEI boot the unified kernel image directly
+# https://wiki.archlinux.org/title/Unified_kernel_image#Directly_from_UEFI
+######################################################
+"
+efi_dev=$(lsblk --noheadings --output PKNAME $efi_part)
+efi_part_num=$(echo $efi_part | grep -Eo '[0-9]+$')
+arch-chroot /mnt pacman --noconfirm -S --needed efibootmgr
+
+echo "Creating UEFI boot entries for each unified kernel image ..."
+
+    arch-chroot /mnt efibootmgr --create --disk /dev/${efi_dev} --part ${efi_part_num} --label "ArchLinux-linux-zen" --loader "EFI\\Linux\\ArchLinux-linux-zen.efi" --quiet
+    arch-chroot /mnt efibootmgr --create --disk /dev/${efi_dev} --part ${efi_part_num} --label "ArchLinux-linux-zen-fallback" --loader "EFI\\Linux\\ArchLinux-linux-zen-fallback.efi" --quiet
+
+arch-chroot /mnt efibootmgr
+echo -e "\n\nDo you want to change boot order?: "
+read -p "Enter boot order (empty to skip): " boot_order
+if [[ -n $boot_order ]] ; then
+    echo -e "\n"
+    arch-chroot /mnt efibootmgr --bootorder ${boot_order}
+    echo -e "\n"
+fi
+
 }
+
 Inicio
 Respuesta
 Verificar_UEFI
@@ -325,3 +548,21 @@ sleep 02
 UEFI_entradas
 sleep 02
 Particion
+sleep 02 
+Formateando_UEFI
+sleep 02
+Formateando_root
+sleep 02
+Formatenado_swap
+sleep 02
+Instalacion
+sleep 02
+fstab
+sleep 02
+horaria
+sleep 02
+idioma
+sleep 02
+network
+sleep 02
+config
