@@ -1,568 +1,402 @@
-#! /bin/bash
+#!/usr/bin/env -S bash -e
 
-######################################################
-# Variable Color
-######################################################
-# Regular Colors
-Black='\033[0;30m'        # Black
-Red='\033[0;31m'          # Red
-Green='\033[0;32m'        # Green
-Yellow='\033[0;33m'       # Yellow
-Blue='\033[0;34m'         # Blue
-Purple='\033[0;35m'       # Purple
-Cyan='\033[0;36m'         # Cyan
-White='\033[0;37m'        # White
-
-# Bold
-BBlack='\033[1;30m'       # Black
-BRed='\033[1;31m'         # Red
-BGreen='\033[1;32m'       # Green
-BYellow='\033[1;33m'      # Yellow
-BBlue='\033[1;34m'        # Blue
-BPurple='\033[1;35m'      # Purple
-BCyan='\033[1;36m'        # Cyan
-BWhite='\033[1;37m'       # White
-
-# Underline
-UBlack='\033[4;30m'       # Black
-URed='\033[4;31m'         # Red
-UGreen='\033[4;32m'       # Green
-UYellow='\033[4;33m'      # Yellow
-UBlue='\033[4;34m'        # Blue
-UPurple='\033[4;35m'      # Purple
-UCyan='\033[4;36m'        # Cyan
-UWhite='\033[4;37m'       # White
-
-# Background
-On_Black='\033[40m'       # Black
-On_Red='\033[41m'         # Red
-On_Green='\033[42m'       # Green
-On_Yellow='\033[43m'      # Yellow
-On_Blue='\033[44m'        # Blue
-On_Purple='\033[45m'      # Purple
-On_Cyan='\033[46m'        # Cyan
-On_White='\033[47m'       # White
-
-# High Intensity
-IBlack='\033[0;90m'       # Black
-IRed='\033[0;91m'         # Red
-IGreen='\033[0;92m'       # Green
-IYellow='\033[0;93m'      # Yellow
-IBlue='\033[0;94m'        # Blue
-IPurple='\033[0;95m'      # Purple
-ICyan='\033[0;96m'        # Cyan
-IWhite='\033[0;97m'       # White
-
-# Bold High Intensity
-BIBlack='\033[1;90m'      # Black
-BIRed='\033[1;91m'        # Red
-BIGreen='\033[1;92m'      # Green
-BIYellow='\033[1;93m'     # Yellow
-BIBlue='\033[1;94m'       # Blue
-BIPurple='\033[1;95m'     # Purple
-BICyan='\033[1;96m'       # Cyan
-BIWhite='\033[1;97m'      # White
-
-# High Intensity backgrounds
-On_IBlack='\033[0;100m'   # Black
-On_IRed='\033[0;101m'     # Red
-On_IGreen='\033[0;102m'   # Green
-On_IYellow='\033[0;103m'  # Yellow
-On_IBlue='\033[0;104m'    # Blue
-On_IPurple='\033[0;105m'  # Purple
-On_ICyan='\033[0;106m'    # Cyan
-On_IWhite='\033[0;107m'   # White
-
-# Reset
-Color_Off='\033[0m'       # Text Reset
-
-######################################################
-# Inicio del script
-######################################################
-
-function Inicio(){
-	
-	echo -e " \033[1;91m
-██╗  ██╗ ██████╗ ██╗  ██╗ █████╗ ████████╗███████╗███████╗███╗   ██╗
-██║ ██╔╝██╔═══██╗██║ ██╔╝██╔══██╗╚══██╔══╝╚══███╔╝██╔════╝████╗  ██║
-█████╔╝ ██║   ██║█████╔╝ ███████║   ██║     ███╔╝ █████╗  ██╔██╗ ██║
-██╔═██╗ ██║   ██║██╔═██╗ ██╔══██║   ██║    ███╔╝  ██╔══╝  ██║╚██╗██║
-██║  ██╗╚██████╔╝██║  ██╗██║  ██║   ██║   ███████╗███████╗██║ ╚████║
-╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝╚═╝  ╚═══╝                                                                                                                                                        																							
-\033[0m"
-
-}
-function Respuesta(){
-	
-	echo -e "\033[1;97m
-Este es un script de instalación de Arch Linux.
-Para iniciarlo, presione Enter, de lo contrario, presione cualquier otra tecla.
-Sin embargo, no hay garantía de éxito.
-Tampoco hay garantía de la seguridad de sus datos existentes.\033[0m
-	"
-	
-	read -p "`echo -e '\033[1;92m¿Iniciar?\033[0m'`" inicio
-
-	if [[ -n $inicio ]] ; then
-		exit 1
-	fi	
-
-}
-function Verificar_UEFI(){
-	
-	echo -e "\033[0;91m
-######################################################
-# Verificando el modo del boot
-# https://wiki.archlinux.org/title/Installation_guide#Verify_the_boot_mode
-######################################################\033[0m
-	"
-	
-	if [[ -e /sys/firmware/efi/efivars ]] ; then
-		echo -e "\033[1;97mUEFI modo activado.\033[0m"
-	else
-		echo "\033[0;91m¡El sistema no arrancó en modo UEFI!\033[0m"
-		exit 1
-	fi
-	echo -e "\n"
-	read -p "`echo -e '\033[1;92m¿Quiere configurar un arranque seguro con su propia clave? [S/n] \033[0m'`" secure_boot
+# Cleaning the TTY.
+clear
 
 
-	case $secure_boot in 
-		[sS] ) 
-			setup_mode=$(bootctl status | grep -E "Secure Boot.*setup" | wc -l)
-			if [[ $setup_mode -ne 1 ]] ; then
-				echo "El firmware no está en el modo de configuración. Verifique la BIOS."
-				read -p "¿Continuar sin arranque seguro? [s/N] " keep_going
-				case $keep_going in 
-					[sS] ) 
-						Internet;;
-					[nN] )
-						exit 1;;
-					* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
-					sleep 03; clear; Inicio; Verificar_UEFI;;
-				esac
-			fi;Internet;;
-		[nN] )
-			secure_boot="n"; Internet;;
-		* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
-			sleep 03; clear; Inicio; Verificar_UEFI;;
-	esac
-	
+# Selecting the kernel flavor to install.
+kernel_selector () {
+    echo "List of kernels:"
+    echo "1) Stable — Vanilla Linux kernel and modules, with a few patches applied."
+    echo "2) Hardened — A security-focused Linux kernel."
+    echo "3) Longterm — Long-term support (LTS) Linux kernel and modules."
+    echo "4) Zen Kernel — Optimized for desktop usage."
+    read -r -p "Insert the number of the corresponding kernel: " choice
+    echo "$choice will be installed"
+    case $choice in
+        1 ) kernel=linux
+            ;;
+        2 ) kernel=linux-hardened
+            ;;
+        3 ) kernel=linux-lts
+            ;;
+        4 ) kernel=linux-zen
+            ;;
+        * ) echo "You did not enter a valid selection."
+            kernel_selector
+    esac
 }
 
-function Internet(){
+## user input ##
 
-	echo -e "\033[0;91m
-######################################################
-# Comprobando conexión a internet
-# https://wiki.archlinux.org/title/Installation_guide#Connect_to_the_internet
-######################################################\033[0m
-	"
-	ping -c 1 archlinux.org >/dev/null 2>&1
-	if [[ $? -ne 0 ]] ; then
-		echo -e "\033[1;97mPor favor, compruebe la conexión a Internet.\033[0m"
-		echo -e "\n"
-		read -p "`echo -e '\033[1;92m¿Quiere configurar la conexión wifi? [S/n] \033[0m'`" wifi
-		case $wifi in 
-			[sS] ) 
-				dispositivo=$(iwctl device list | grep --invert-match "Devices" | grep --invert-match "Name" | grep --invert-match "-" | awk '{print $2}' | head -n1 | cat --number)			
-				echo -e "\033[1;97m $dispositivo\033[0m"
-				read -p "`echo -e '\033[1;92mSelecciona la interfaz: \033[0m'`" wifi_id
-				wifi_part=$(echo "$dispositivo" | awk "\$1 == $wifi_id { print \$2}")
-				iwctl station $wifi_part scan 
-				sleep 04
-				SSID=$(iwctl station $wifi_part get-networks | grep --invert-match "Available" | grep --invert-match "Network" | grep --invert-match "-" | cat --number)
-				echo -e "\033[1;97m$SSID\033[0m"
-				read -p "`echo -e '\033[1;92mSelecciona tu SSID: \033[0m'`" wifi_ssid
-				wifi_part_ssid=$(echo "$SSID" | awk "\$1 == $wifi_ssid { print \$2}")
-				iwctl station $wifi_part connect $wifi_part_ssid
-				sleep 04
-				ping -c 1 archlinux.org >/dev/null 2>&1
-				if [[ $? -ne 0 ]] ; then
-					Internet
-				else
-					echo -e "\033[1;97mConectado a Internet.\033[0m"
-				fi;;
-			[nN] ) echo -e "\033[1;97m\nSaliendo del script\nSin internet no se puede instalar\033[0m";
-				exit 1;;
-			* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
-				sleep 03; clear; Inicio; Internet;;
-		esac
-	else
-		echo -e "\033[1;97mConectado a Internet.\033[0m"
-	fi
-}
-
-function Clock(){
-
-	echo -e " \033[0;91m
-######################################################
-# Actualizar reloj del sistema
-# https://wiki.archlinux.org/title/Installation_guide#Update_the_system_clock
-######################################################\033[0m
-	"
-timedatectl set-ntp true
-echo -e "\033[1;97mActualizado Reloj del Sistema.\033[0m"
-
-}
-
-function UEFI_entradas(){
-	
-	echo -e " \033[0;91m
-######################################################
-# EFI configuracion boot
-# https://man.archlinux.org/man/efibootmgr.8
-######################################################\033[0m
-"
-efibootmgr
-efi_boot_id=" "
-while [[ -n $efi_boot_id ]]; do
-    echo -e "\033[1;97m\n¿Desea eliminar alguna entrada del arranque?\033[0m"
-    read -p "`echo -e '\033[1;92mIngrese el número de arranque (vacío para omitir): \033[0m'`"  efi_boot_id
-    if [[ -n $efi_boot_id ]] ; then
-        efibootmgr -b $efi_boot_id -B
-    fi
+# Selecting the target for the installation.
+PS3="Select the disk where Arch Linux is going to be installed: "
+select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|vd|mm");
+do
+    DISK=$ENTRY
+    echo "Installing Arch Linux on $DISK."
+    break
 done
 
-}
+# Confirming the disk selection.
+read -r -p "This will delete the current partition table on $DISK. Do you agree [y/N]? " response
+response=${response,,}
+if [[ ! ("$response" =~ ^(yes|y)$) ]]; then
+    echo "Quitting."
+    exit
+fi
 
-function Particion(){
+#select kernel
+kernel_selector
 
-	echo -e " \033[0;91m
-######################################################
-# Particion de discos
-# https://wiki.archlinux.org/title/Installation_guide#Partition_the_disks
-######################################################\033[0m
-"
-devices=$(lsblk --nodeps --paths --list --noheadings --sort=size --output=name,size,model | grep --invert-match "loop" | cat --number)
+# Setting username.
+read -r -p "Please enter name for a user account (leave empty to skip): " username
 
-echo -e "\033[1;92m\nElege el dispositivo a formatear:\033[0m"
-echo -e "\033[1;97m$devices\033[0m"
-read -p "`echo -e '\033[1;92mIngrese el número del disco: \033[0m'`"  device_id
-device=$(echo "$devices" | awk "\$1 == $device_id { print \$2}")
+# Setting password.
+if [[ -n $username ]]; then
+    read -r -p "Please enter a password for the user account: " password
+fi
 
-read -p "`echo -e '\033[1;92m\nIngrese la dimensión de la swap: \033[0m'`"  swap
+# Choose locales.
+read -r -p "Please insert the locale you use in this format (xx_XX): " locale
 
-sgdisk --clear --new=1:0:+512MiB --typecode=1:ef00 --change-name=1:EFI --new=2:0:+"$swap"GiB --typecode=2:8200 --change-name=2:cryptswap --new=3:0:0 --typecode=3:8300 --change-name=3:cryptsystem $device
+# Choose keyboard layout.
+read -r -p "Please insert the keyboard layout you use: " kblayout
 
-partitions=$(lsblk --paths --list --noheadings --output=name,size,model | grep --invert-match "loop" | cat --number)
 
-echo -e "\033[1;92m\n\nSeleccione el número de partición EFI: \033[0m"
-echo -e "\033[1;97m$partitions\033[0m"
-read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" efi_id
-efi_part=$(echo "$partitions" | awk "\$1 == $efi_id { print \$2}")
 
-echo -e "\033[1;92m\n\nSeleccione el número de partición root: \033[0m"
-echo -e "\033[1;97m$partitions\033[0m"
-read -p "`echo -e '\033[1;92mIngrese el número: \033[0m'`" root_id
-root_part=$(echo "$partitions" | awk "\$1 == $root_id { print \$2}")
 
-cryptsetup erase $root_part 2> /dev/null
+## installation ##
 
-cryptsetup luksDump $root_part 2> /dev/null
+# Updating the live environment usually causes more problems than its worth, and quite often can't be done without remounting cowspace with more capacity, especially at the end of any given month.
+pacman -Sy
 
-wipefs --all $root_part 2> /dev/null
+# Installing curl
+pacman -S --noconfirm curl
 
-echo -e "\033[1;92m\n\nSeleccione el número de partición swap: \033[0m"
-echo -e "\033[1;97m$partitions\033[0m"
-read -p "Ingrese el número:" swap_id
-swap_part=$(echo "$partitions" | awk "\$1 == $swap_id { print \$2}")
+# formatting the disk
+wipefs -af "$DISK" &>/dev/null
+sgdisk -Zo "$DISK" &>/dev/null
 
-cryptsetup erase $swap_part 2> /dev/null
-cryptsetup luksDump $swap_part 2> /dev/null
-wipefs --all $swap_part 2> /dev/null
+# Checking the microcode to install.
+CPU=$(grep vendor_id /proc/cpuinfo)
+if [[ $CPU == *"AuthenticAMD"* ]]; then
+    microcode=amd-ucode
+else
+    microcode=intel-ucode
+fi
 
-}
+# Creating a new partition scheme.
+echo "Creating new partition scheme on $DISK."
+parted -s "$DISK" \
+    mklabel gpt \
+    mkpart ESP fat32 1MiB 128MiB \
+    set 1 esp on \
+    mkpart cryptroot 128MiB 100% \
 
-function Formateando_UEFI(){
+sleep 0.1
+ESP="/dev/$(lsblk $DISK -o NAME,PARTLABEL | grep ESP| cut -d " " -f1 | cut -c7-)"
+cryptroot="/dev/$(lsblk $DISK -o NAME,PARTLABEL | grep cryptroot | cut -d " " -f1 | cut -c7-)"
 
-	echo -e " \033[0;91m
-######################################################
-# Formateando Particiones
-# https://wiki.archlinux.org/title/Installation_guide#Format_the_partitions
-######################################################\033[0m
-"
-echo -e "\033[1;97mFormateando Particion EFI...\033[0m"
-echo -e "\033[1;97mCorriendo commando: mkfs.fat -n boot -F 32 $efi_part\033[0m"
+# Informing the Kernel of the changes.
+echo "Informing the Kernel about the disk changes."
+partprobe "$DISK"
 
-mkfs.fat -n boot -F 32 "$efi_part" >/dev/null 2>&1
+# Formatting the ESP as FAT32.
+echo "Formatting the EFI Partition as FAT32."
+mkfs.fat -F 32 -s 2 $ESP &>/dev/null
 
-}
+# Creating a LUKS Container for the root partition.
+echo "Creating LUKS Container for the root partition."
+cryptsetup luksFormat --type luks2 --align-payload=8192 -s 256 -c aes-xts-plain64 $cryptroot
+echo "Opening the newly created LUKS Container."
+cryptsetup open $cryptroot cryptroot
+BTRFS="/dev/mapper/cryptroot"
 
-function Formateando_root(){
-	echo -e " \033[0;91m
-######################################################
-# Encryptando Particion Root
-# https://wiki.archlinux.org/title/Dm-crypt/Device_encryption
-######################################################\033[0m
-"
+# Formatting the LUKS Container as BTRFS.
+echo "Formatting the LUKS container as BTRFS."
+mkfs.btrfs $BTRFS &>/dev/null
+mount -o clear_cache,nospace_cache $BTRFS /mnt
 
-echo -e "\033[1;97mEncryptando particon root ...\033[0m"
-cryptsetup luksFormat --type luks2 --cipher aes-xts-plain64 --key-size 512 --iter-time 2000 --pbkdf argon2id --hash sha3-512 $root_part
-echo -e "\033[1;97mDesencriptando la particion root ...\033[0m"
-cryptsetup open $root_part cryptroot
+# Creating BTRFS subvolumes.
+echo "Creating BTRFS subvolumes."
+btrfs su cr /mnt/@ &>/dev/null
+btrfs su cr /mnt/@/.snapshots &>/dev/null
+mkdir -p /mnt/@/.snapshots/1 &>/dev/null
+btrfs su cr /mnt/@/.snapshots/1/snapshot &>/dev/null
+btrfs su cr /mnt/@/boot/ &>/dev/null
+btrfs su cr /mnt/@/home &>/dev/null
+btrfs su cr /mnt/@/root &>/dev/null
+btrfs su cr /mnt/@/srv &>/dev/null
+btrfs su cr /mnt/@/var_log &>/dev/null
+btrfs su cr /mnt/@/var_log_journal &>/dev/null
+btrfs su cr /mnt/@/var_crash &>/dev/null
+btrfs su cr /mnt/@/var_cache &>/dev/null
+btrfs su cr /mnt/@/var_tmp &>/dev/null
+btrfs su cr /mnt/@/var_spool &>/dev/null
+btrfs su cr /mnt/@/cryptkey &>/dev/null
 
-echo -e "\033[1;97mFormateando particion root en BTRFS...\033[0m"
-mkfs.btrfs -L ROOT -n 32k /dev/mapper/cryptroot
+chattr +C /mnt/@/boot
+chattr +C /mnt/@/srv
+chattr +C /mnt/@/var_log
+chattr +C /mnt/@/var_log_journal
+chattr +C /mnt/@/var_crash
+chattr +C /mnt/@/var_cache
+chattr +C /mnt/@/var_tmp
+chattr +C /mnt/@/var_spool
+chattr +C /mnt/@/cryptkey
 
-echo -e "\033[1;97mMontando particion root en /mnt...\033[0m"
-mount /dev/mapper/cryptroot /mnt
+#Set the default BTRFS Subvol to Snapshot 1 before pacstrapping
+btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
 
-echo -e "\033[1;97mCreando subvolumenes BTRFS...\033[0m"
-btrfs sub create /mnt/@
-btrfs sub create /mnt/@home
-btrfs sub create /mnt/@pkg
-btrfs sub create /mnt/@abs
-btrfs sub create /mnt/@tmp
-btrfs sub create /mnt/@srv
-btrfs sub create /mnt/@snapshots
+cat << EOF >> /mnt/@/.snapshots/1/info.xml
+<?xml version="1.0"?>
+<snapshot>
+  <type>single</type>
+  <num>1</num>
+  <date>1999-03-31 0:00:00</date>
+  <description>First Root Filesystem</description>
+  <cleanup>number</cleanup>
+</snapshot>
+EOF
 
-echo -e "\033[1;97mMontando subvolumenes...\033[0m"
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@,clear_cache /dev/mapper/cryptroot /mnt
-mkdir -p /mnt/{boot,home,var/cache/pacman/pkg,var/abs,var/tmp,srv,.snapshots}
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@home /dev/mapper/cryptroot /mnt/home
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@pkg /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@abs /dev/mapper/cryptroot /mnt/var/abs
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@tmp /dev/mapper/cryptroot /mnt/var/tmp
-mount -o noatime,nodiratime,compress-force=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@srv /dev/mapper/cryptroot /mnt/srv
-mount -o noatime,nodiratime,compres-forces=zstd,commit=120,space_cache,ssd,discard=async,autodefrag,subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
+chmod 600 /mnt/@/.snapshots/1/info.xml
 
-}
+# Mounting the newly created subvolumes.
+umount /mnt
+echo "Mounting the newly created subvolumes."
+mount -o ssd,noatime,space_cache,compress=zstd:15 $BTRFS /mnt
+mkdir -p /mnt/{boot,root,home,.snapshots,srv,tmp,/var/log,/var/crash,/var/cache,/var/tmp,/var/spool,/cryptkey}
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodev,nosuid,noexec,subvol=@/boot $BTRFS /mnt/boot
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodev,nosuid,subvol=@/root $BTRFS /mnt/root
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodev,nosuid,subvol=@/home $BTRFS /mnt/home
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,subvol=@/.snapshots $BTRFS /mnt/.snapshots
+mount -o ssd,noatime,space_cache=v2.autodefrag,compress=zstd:15,discard=async,subvol=@/srv $BTRFS /mnt/srv
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/var_log $BTRFS /mnt/var/log
 
-function Formateando_swap(){
-	echo -e " \033[0;91m
-######################################################
-# Encryptando Particion Swap
-# https://wiki.archlinux.org/title/swap
-######################################################\033[0m
-"
+# Toolbox (https://github.com/containers/toolbox) needs /var/log/journal to have dev, suid, and exec, Thus I am splitting the subvolume. Need to make the directory after /mnt/var/log/ has been mounted.
+mkdir -p /mnt/var/log/journal
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,subvol=@/var_log_journal $BTRFS /mnt/var/log/journal
 
-echo -e "\033[1;97mEncryptando particon swap ...\033[0m"
-cryptsetup open --type plain --key-file /dev/urandom $swap_part swap
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/var_crash $BTRFS /mnt/var/crash
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/var_cache $BTRFS /mnt/var/cache
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/var_tmp $BTRFS /mnt/var/tmp
 
-echo -e "\033[1;97mMontando swap...\033[0m"
-mkswap -L swap /dev/mapper/swap
-swapon -L swap
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/var_spool $BTRFS /mnt/var/spool
 
-}
+# The encryption is splitted as we do not want to include it in the backup with snap-pac.
+mount -o ssd,noatime,space_cache=v2,autodefrag,compress=zstd:15,discard=async,nodatacow,nodev,nosuid,noexec,subvol=@/cryptkey $BTRFS /mnt/cryptkey
 
-function Instalacion(){
-	echo  " \033[0;91m
-######################################################
-# Instalando sistema base
-# https://wiki.archlinux.org/title/installation_guide#Installation
-######################################################\033[0m
-"
-echo -e "\033[1;97mPaquetes a instalar: base \nbase-devel \nlinux-zen  \nlinux-zen-headers \nlinux-firmware \nintel-ucode \nefitools \nmkinitcpio \nnetworkmanager \nnano \nefibootmgr \nbtrfs-progs \nsudo \npolkit...\033[0m"
-read -p "`echo -e '\033[1;92m¿Quiere Instalar paquetes adicionales a la instalacion? [S/n] \033[0m'`" add
-case $add in 
-	[sS] ) 
-		read "Añade paquetes adiccionales(con un espacio entre ellos):" add_mas;
-		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant $add_mas;;
-	[nN] ) echo -e "\033[1;97m\nInstalando paquetes base\033[0m";
-		pacstrap /mnt base base-devel linux-zen  linux-zen-headers linux-firmware intel-ucode efitools mkinitcpio networkmanager nano efibootmgr btrfs-progs sudo polkit wpa_supplicant;;
-			
-	* ) echo -e "\033[1;97m\nOpcion invalida\033[0m";
-		sleep 03; clear; Inicio; Instalacion;;
-esac
+mkdir -p /mnt/boot/efi
+mount -o nodev,nosuid,noexec $ESP /mnt/boot/efi
 
-}
+# Pacstrap (setting up a base sytem onto the new root).
+# As I said above, I am considering replacing gnome-software with pamac-flatpak-gnome as PackageKit seems very buggy on Arch Linux right now.
+echo "Installing the base system (it may take a while)."
+pacstrap /mnt base ${kernel} ${microcode} linux-firmware grub grub-btrfs snapper snap-pac efibootmgr sudo networkmanager apparmor firewalld zram-generator reflector chrony sbctl openssh tuned fwupd
 
-function fstab(){
-echo " \033[0;91m
-######################################################
-# Generando fstab
-# https://wiki.archlinux.org/title/Installation_guide#Fstab
-######################################################\033[0m
-"
-echo -e "Generando fstab ..."
+# Generating /etc/fstab.
+echo "Generating a new fstab."
 genfstab -U /mnt >> /mnt/etc/fstab
+sed -i 's#,subvolid=258,subvol=/@/.snapshots/1/snapshot,subvol=@/.snapshots/1/snapshot##g' /mnt/etc/fstab
 
-}
+# Setting hostname.
+read -r -p "Please enter the hostname: " hostname
+echo "$hostname" > /mnt/etc/hostname
 
-function horaria(){
-echo " \033[0;91m
-######################################################
-# Colocando zona horaria
-# https://wiki.archlinux.org/title/Installation_guide#Time_zone
-######################################################\033[0m
-"
-echo -e "Configurando zona horaria..."
-arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Madrid /etc/localtime
-arch-chroot /mnt hwclock --systohc
+# Setting hosts file.
+echo "Setting hosts file."
+cat > /mnt/etc/hosts <<EOF
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   $hostname.localdomain   $hostname
+EOF
 
-}
+# Setting up locales.
+echo "$locale.UTF-8 UTF-8"  > /mnt/etc/locale.gen
+echo "LANG=$locale.UTF-8" > /mnt/etc/locale.conf
 
-function idioma(){
-echo " \033[0;91m
-######################################################
-# Idioma
-# https://wiki.archlinux.org/title/Installation_guide#Localization
-######################################################\033[0m
-"
+# Setting up keyboard layout.
+read -r -p "Please insert the keyboard layout you use: " kblayout
+echo "KEYMAP=$kblayout" > /mnt/etc/vconsole.conf
 
-echo -e "Configurando Idiomas ..."
-arch-chroot /mnt sed -i 's/^#es_ES.UTF-8 UTF-8/es_ES.UTF-8 UTF-8/' /etc/locale.gen
-arch-chroot /mnt locale-gen
-echo "LANG=es_ES.UTF-8" > /mnt/etc/locale.conf
-echo "KEYMAP=es" > /mnt/etc/vconsole.conf
+# Configuring /etc/mkinitcpio.conf
+echo "Configuring /etc/mkinitcpio for ZSTD compression and LUKS hook."
+sed -i 's,#COMPRESSION="zstd",COMPRESSION="zstd",g' /mnt/etc/mkinitcpio.conf
+sed -i 's,modconf block filesystems keyboard,keyboard modconf block encrypt filesystems,g' /mnt/etc/mkinitcpio.conf
 
-}
+# Enabling LUKS in GRUB and setting the UUID of the LUKS container.
+UUID=$(blkid $cryptroot | cut -f2 -d'"')
+sed -i 's/#\(GRUB_ENABLE_CRYPTODISK=y\)/\1/' /mnt/etc/default/grub
+echo "" >> /mnt/etc/default/grub
+echo -e "# Booting with BTRFS subvolume\nGRUB_BTRFS_OVERRIDE_BOOT_PARTITION_DETECTION=true" >> /mnt/etc/default/grub
+sed -i 's#rootflags=subvol=${rootsubvol}##g' /mnt/etc/grub.d/10_linux
+sed -i 's#rootflags=subvol=${rootsubvol}##g' /mnt/etc/grub.d/20_linux_xen
 
-function network(){
-echo " \033[0;91m
-######################################################
-# Activando NetworkManager
-# https://wiki.archlinux.org/title/NetworkManager
-######################################################\033[0m
-"
+# Enabling CPU Mitigations
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/default/grub.d/40_cpu_mitigations.cfg >> /mnt/etc/grub.d/40_cpu_mitigations.cfg
 
-arch-chroot /mnt systemctl enable systemd-resolved.service
-arch-chroot /mnt systemctl enable NetworkManager.service
-arch-chroot /mnt systemctl enable wpa_supplicant.service
+# Distrusting the CPU
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/default/grub.d/40_distrust_cpu.cfg >> /mnt/etc/grub.d/40_distrust_cpu.cfg
 
-}
+# Enabling IOMMU
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/default/grub.d/40_enable_iommu.cfg >> /mnt/etc/grub.d/40_enable_iommu.cfg
 
+# Enabling NTS
+curl https://raw.githubusercontent.com/GrapheneOS/infrastructure/main/chrony.conf >> /mnt/etc/chrony.conf
 
-function config(){
-	
-root_block=$root_part
-root_uuid=$(lsblk -dno UUID $root_block)
-efi_uuid=$(lsblk -dno UUID $efi_part)
+# Setting GRUB configuration file permissions
+chmod 755 /mnt/etc/grub.d/*
 
-echo "cryptroot  UUID=$root_uuid  -  password-echo=no,x-systemd.device-timeout=0,timeout=0,no-read-workqueue,no-write-workqueue,discard"  >>  /mnt/etc/crypttab.initramfs
+# Adding keyfile to the initramfs to avoid double password.
+dd bs=512 count=4 if=/dev/random of=/mnt/cryptkey/.root.key iflag=fullblock &>/dev/null
+chmod 000 /mnt/cryptkey/.root.key &>/dev/null
+cryptsetup -v luksAddKey /dev/disk/by-partlabel/cryptroot /mnt/cryptkey/.root.key
+sed -i "s#quiet#cryptdevice=UUID=$UUID:cryptroot root=$BTRFS lsm=landlock,lockdown,yama,apparmor,bpf cryptkey=rootfs:/cryptkey/.root.key#g" /mnt/etc/default/grub
+sed -i 's#FILES=()#FILES=(/cryptkey/.root.key)#g' /mnt/etc/mkinitcpio.conf
 
-swap_uuid=$(lsblk -dno UUID $swap_part)
-echo "cryptswap  UUID=$swap_uuid  /dev/urandom swap,offset=2048,cipher=aes-xts-plain64,size=256" >> /mnt/etc/crypttab
-sed -i "/swap/ s:^UUID=[a-zA-Z0-9-]*\s:/dev/mapper/cryptswap  :" /mnt/etc/fstab
+# Configure AppArmor Parser caching
+sed -i 's/#write-cache/write-cache/g' /mnt/etc/apparmor/parser.conf
+sed -i 's,#Include /etc/apparmor.d/,Include /etc/apparmor.d/,g' /mnt/etc/apparmor/parser.conf
 
-echo "Editing mkinitcpio ..."
-sed -i '/^HOOKS=/ s/ udev//' /mnt/etc/mkinitcpio.conf
-sed -i '/^HOOKS=/ s/ keymap//' /mnt/etc/mkinitcpio.conf
-sed -i '/^HOOKS=/ s/ consolefont//' /mnt/etc/mkinitcpio.conf
-sed -i '/^HOOKS=/ s/base/base systemd keyboard/' /mnt/etc/mkinitcpio.conf
-sed -i '/^HOOKS=/ s/block/sd-vconsole block sd-encrypt/' /mnt/etc/mkinitcpio.conf
+# Blacklisting kernel modules
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/modprobe.d/30_security-misc.conf >> /mnt/etc/modprobe.d/30_security-misc.conf
+chmod 600 /mnt/etc/modprobe.d/*
 
-kernel_cmd="$kernel_cmd rootfstype=btrfs rootflags=subvol=/@ rw modprobe.blacklist=pcspkr"
+# Security kernel settings.
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/sysctl.d/30_security-misc.conf >> /mnt/etc/sysctl.d/30_security-misc.conf
+sed -i 's/kernel.yama.ptrace_scope=2/kernel.yama.ptrace_scope=3/g' /mnt/etc/sysctl.d/30_security-misc.conf
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/sysctl.d/30_silent-kernel-printk.conf >> /mnt/etc/sysctl.d/30_silent-kernel-printk.conf
+curl https://raw.githubusercontent.com/Kicksecure/security-misc/master/etc/sysctl.d/30_security-misc_kexec-disable.conf >> /mnt/etc/sysctl.d/30_security-misc_kexec-disable.conf
+chmod 600 /mnt/etc/sysctl.d/*
 
-echo "$kernel_cmd" > /mnt/etc/kernel/cmdline_fallback
+# Remove nullok from system-auth
+sed -i 's/nullok//g' /mnt/etc/pam.d/system-auth
 
-arch-chroot /mnt mkdir -p /efi/EFI/Linux
+# Disable coredump
+echo "* hard core 0" >> /mnt/etc/security/limits.conf
 
-    # Add line ALL_microcode=(/boot/*-ucode.img)
-    sed -i '/^ALL_kver=.*/a ALL_microcode=(/boot/*-ucode.img)' /mnt/etc/mkinitcpio.d/linux-zen.preset
-    # Add Arch splash screen and add default_uki= and fallback_uki=
-    sed -i "s|^#default_options=.*|default_options=\"--splash /usr/share/systemd/bootctl/splash-arch.bmp\"\\ndefault_uki=\"/efi/EFI/Linux/ArchLinux-$KERNEL.efi\"|" /mnt/etc/mkinitcpio.d/linux-zen.preset
-    sed -i "s|^fallback_options=.*|fallback_options=\"-S autodetect --cmdline /etc/kernel/cmdline_fallback\"\\nfallback_uki=\"/efi/EFI/Linux/ArchLinux-$KERNEL-fallback.efi\"|" /mnt/etc/mkinitcpio.d/linux-zen.preset
-    # comment out default_image= and fallback_image=
-    sed -i "s|^default_image=.*|#&|" /mnt/etc/mkinitcpio.d/linux-zen.preset
-    sed -i "s|^fallback_image=.*|#&|" /mnt/etc/mkinitcpio.d/linux-zen.preset
-    
-rm /mnt/efi/initramfs-*.img 2>/dev/null
-rm /mnt/boot/initramfs-*.img 2>/dev/null
+# Disable su for non-wheel users
+bash -c 'cat > /mnt/etc/pam.d/su' <<-'EOF'
+#%PAM-1.0
+auth		sufficient	pam_rootok.so
+# Uncomment the following line to implicitly trust users in the "wheel" group.
+#auth		sufficient	pam_wheel.so trust use_uid
+# Uncomment the following line to require a user to be in the "wheel" group.
+auth		required	pam_wheel.so use_uid
+auth		required	pam_unix.so
+account		required	pam_unix.so
+session		required	pam_unix.so
+EOF
 
-echo "$kernel_cmd" > /mnt/etc/kernel/cmdline
-echo "Regenerating the initramfs ..."
-arch-chroot /mnt mkinitcpio -P
+# ZRAM configuration
+bash -c 'cat > /mnt/etc/systemd/zram-generator.conf' <<-'EOF'
+[zram0]
+zram-fraction = 1
+max-zram-size = 8192
+EOF
 
-if [[ $secure_boot == y ]] ; then
-    echo "
-######################################################
-# Secure boot setup
-# https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot
-######################################################
-"
-    arch-chroot /mnt pacman --noconfirm -S sbctl
-    echo "Creating keys ..."
-    arch-chroot /mnt sbctl create-keys
-    arch-chroot /mnt chattr -i /sys/firmware/efi/efivars/{PK,KEK,db}*
+# Configuring the system.
+arch-chroot /mnt /bin/bash -e <<EOF
 
-    echo "Enroll keys ..."
-    read -p "Do you want to add Microsoft's UEFI drivers certificates to the database? [Y/n] " ms_cert
-    ms_cert="${ms_cert:-y}"
-    ms_cert="${ms_cert,,}"
-    if [[ $ms_cert == n ]] ; then
-        arch-chroot /mnt sbctl enroll-keys 2>&1
-    else
-        arch-chroot /mnt sbctl enroll-keys --microsoft 2>&1
+    # Setting up timezone.
+    ln -sf /usr/share/zoneinfo/$(curl -s http://ip-api.com/line?fields=timezone) /etc/localtime &>/dev/null
+
+    # Setting up clock.
+    hwclock --systohc
+
+    # Generating locales.my keys aren't even on
+    echo "Generating locales."
+    locale-gen &>/dev/null
+
+    # Generating a new initramfs.
+    echo "Creating a new initramfs."
+    chmod 600 /boot/initramfs-linux* &>/dev/null
+    mkinitcpio -P &>/dev/null
+
+    # Snapper configuration
+    umount /.snapshots
+    rm -r /.snapshots
+    snapper --no-dbus -c root create-config /
+    btrfs subvolume delete /.snapshots
+    mkdir /.snapshots
+    mount -a
+    chmod 750 /.snapshots
+
+    # Installing GRUB.
+    echo "Installing GRUB on /boot."
+    grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --modules="normal test efi_gop efi_uga search echo linux all_video gfxmenu gfxterm_background gfxterm_menu gfxterm loadenv configfile gzio part_gpt cryptodisk luks gcry_rijndael gcry_sha256 btrfs" --disable-shim-lock &>/dev/null
+
+    # Creating grub config file.
+    echo "Creating GRUB config file."
+    grub-mkconfig -o /boot/grub/grub.cfg &>/dev/null
+
+    # Adding user with sudo privilege
+    if [ -n "$username" ]; then
+        echo "Adding $username with root privilege."
+        useradd -m $username
+        usermod -aG wheel $username
+
+        groupadd -r audit
+        gpasswd -a $username audit
     fi
-    # Ignore any error and force enroll keys
-    # I need --yes-this-might-brick-my-machine for libvirt virtual machines
-    if [[ $? -ne 0 ]] ; then
-        read -p "Ignore error and enroll key anyway? [y/N] " force_enroll
-        force_enroll="${force_enroll:-n}"
-        force_enroll="${force_enroll,,}"
-        if [[ $force_enroll == y ]] ; then
-            if [[ $ms_cert == n ]] ; then
-                arch-chroot /mnt sbctl enroll-keys --yes-this-might-brick-my-machine
-            else
-                arch-chroot /mnt sbctl enroll-keys --microsoft --yes-this-might-brick-my-machine
-            fi
-        else
-            echo "Did not enroll any keys"
-            echo "Now chroot into new system and enroll keys manully with"
-            echo "sbctl enroll-keys"
-            echo "exit the chroot to continue installation"
-            arch-chroot /mnt
-        fi
-    fi
+EOF
 
-    echo "Signing unified kernel image ..."
-        arch-chroot /mnt sbctl sign --save "/efi/EFI/Linux/ArchLinux-linux-zen.efi"
-        arch-chroot /mnt sbctl sign --save "/efi/EFI/Linux/ArchLinux-linux-zen-fallback.efi"
+# Setting user password.
+[ -n "$username" ] && echo "Setting user password for ${username}." && echo -e "${password}\n${password}" | arch-chroot /mnt passwd "$username" &>/dev/null
 
-fi
+# Giving wheel user sudo access.
+sed -i 's/# \(%wheel ALL=(ALL\(:ALL\|\)) ALL\)/\1/g' /mnt/etc/sudoers
 
-echo "
-######################################################
-# Set up UFEI boot the unified kernel image directly
-# https://wiki.archlinux.org/title/Unified_kernel_image#Directly_from_UEFI
-######################################################
-"
-efi_dev=$(lsblk --noheadings --output PKNAME $efi_part)
-efi_part_num=$(echo $efi_part | grep -Eo '[0-9]+$')
-arch-chroot /mnt pacman --noconfirm -S --needed efibootmgr
+# Change audit logging group
+echo "log_group = audit" >> /mnt/etc/audit/auditd.conf
 
-echo "Creating UEFI boot entries for each unified kernel image ..."
+# Enabling audit service.
+systemctl enable auditd --root=/mnt &>/dev/null
 
-    arch-chroot /mnt efibootmgr --create --disk /dev/${efi_dev} --part ${efi_part_num} --label "ArchLinux-linux-zen" --loader "EFI\\Linux\\ArchLinux-linux-zen.efi" --quiet
-    arch-chroot /mnt efibootmgr --create --disk /dev/${efi_dev} --part ${efi_part_num} --label "ArchLinux-linux-zen-fallback" --loader "EFI\\Linux\\ArchLinux-linux-zen-fallback.efi" --quiet
+# Enabling openssh server
+systemctl enable sshd --root=/mnt &>/dev/null
 
-arch-chroot /mnt efibootmgr
-echo -e "\n\nDo you want to change boot order?: "
-read -p "Enter boot order (empty to skip): " boot_order
-if [[ -n $boot_order ]] ; then
-    echo -e "\n"
-    arch-chroot /mnt efibootmgr --bootorder ${boot_order}
-    echo -e "\n"
-fi
+# Enabling auto-trimming service.
+systemctl enable fstrim.timer --root=/mnt &>/dev/null
 
-}
+# Enabling NetworkManager.
+systemctl enable NetworkManager --root=/mnt &>/dev/null
 
-Inicio
-Respuesta
-Verificar_UEFI
-sleep 02
-Clock
-sleep 02
-UEFI_entradas
-sleep 02
-Particion
-sleep 02 
-Formateando_UEFI
-sleep 02
-Formateando_root
-sleep 02
-Formatenado_swap
-sleep 02
-Instalacion
-sleep 02
-fstab
-sleep 02
-horaria
-sleep 02
-idioma
-sleep 02
-network
-sleep 02
-config
+# Enabling AppArmor.
+echo "Enabling AppArmor."
+systemctl enable apparmor --root=/mnt &>/dev/null
+
+# Enabling Firewalld.
+echo "Enabling Firewalld."
+systemctl enable firewalld --root=/mnt &>/dev/null
+
+# Enabling Reflector timer.
+echo "Enabling Reflector."
+systemctl enable reflector.timer --root=/mnt &>/dev/null
+
+# Enabling systemd-oomd.
+echo "Enabling systemd-oomd."
+systemctl enable systemd-oomd --root=/mnt &>/dev/null
+
+# Disabling systemd-timesyncd
+systemctl disable systemd-timesyncd --root=/mnt &>/dev/null
+
+# Enabling chronyd
+systemctl enable chronyd --root=/mnt &>/dev/null
+
+# Enabling Snapper automatic snapshots.
+echo "Enabling Snapper and automatic snapshots entries."
+systemctl enable snapper-timeline.timer --root=/mnt &>/dev/null
+systemctl enable snapper-cleanup.timer --root=/mnt &>/dev/null
+systemctl enable grub-btrfs.path --root=/mnt &>/dev/null
+
+# Setting umask to 077.
+sed -i 's/022/077/g' /mnt/etc/profile
+echo "" >> /mnt/etc/bash.bashrc
+echo "umask 077" >> /mnt/etc/bash.bashrc
+
+# Finishing up
+echo "Done, you may now wish to reboot (further changes can be done by chrooting into /mnt)."
+exit
+
