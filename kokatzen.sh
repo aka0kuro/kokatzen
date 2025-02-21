@@ -156,14 +156,20 @@ done
 }
 disk
 
+echo
+read -p "$(echo -e $GREEN"Press Enter to continue, otherwise press any other key. " $ENDCOLOR)" start_install
 
 if [[ -n $start_install ]] ; then
     exit 1
 fi
 
+clear 
+logo
+
 BASE_PKGS="base sudo linux-firmware iptables-nft python nano git python linux-$kernel_selector-headers networkmanager dosfstools e2fsprogs btrfs-progs man-db"
 
 if [[ -e /sys/firmware/efi/efivars ]] ; then
+	echo
     echo -e "${GREEN}UEFI mode OK.${ENDCOLOR}"
 else
     echo -e "${RED}System not booted in UEFI mode!${ENDCOLOR}"
@@ -357,3 +363,5 @@ if [[ -n $swap_id ]] ; then
     cryptsetup luksDump $swap_part 2> /dev/null
     wipefs --all $swap_part 2> /dev/null
 fi
+
+
