@@ -21,7 +21,7 @@ logo
 echo
 
 # Selecting the target for the installation.
-PS3="$GREEN Select the disk where Arch Linux is going to be installed: $ENDCOLOR"
+read -r -p "$(echo -e $GREEN"Select the disk where Arch Linux is going to be installed: " $ENDCOLOR)" ENTRY
 select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|vd|mm");
 do
     DISK=$ENTRY
