@@ -1,33 +1,39 @@
 #!/usr/bin/env -S bash -e
 
-logo () { 
-echo -e "\e[31m
+# Cleaning the TTY.
+clear
+RED="\e[31m"
+GREEN="\e[32m"
+ENDCOLOR="\e[0m"
+
+logo (){ 
+echo -e "$RED
 ██╗  ██╗ ██████╗ ██╗  ██╗ █████╗ ████████╗███████╗███████╗███╗   ██╗
 ██║ ██╔╝██╔═══██╗██║ ██╔╝██╔══██╗╚══██╔══╝╚══███╔╝██╔════╝████╗  ██║
 █████╔╝ ██║   ██║█████╔╝ ███████║   ██║     ███╔╝ █████╗  ██╔██╗ ██║
 ██╔═██╗ ██║   ██║██╔═██╗ ██╔══██║   ██║    ███╔╝  ██╔══╝  ██║╚██╗██║
 ██║  ██╗╚██████╔╝██║  ██╗██║  ██║   ██║   ███████╗███████╗██║ ╚████║
 ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝╚═╝  ╚═══╝
-\e[0m"
+$ENDCOLOR"
 }
 
-clear
 logo
 echo
+
 # Selecting the target for the installation.
-PS3="Select the disk where Arch Linux is going to be installed: "
+PS3="$GREEN Select the disk where Arch Linux is going to be installed: $ENDCOLOR"
 select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|vd|mm");
 do
     DISK=$ENTRY
-    echo "Installing Arch Linux on $DISK."
+    echo -e "$GREEN Installing Arch Linux on $DISK.$ENDCOLOR"
     break
 done
 
 # Confirming the disk selection.
-read -r -p "This will delete the current partition table on $DISK. Do you agree [y/N]? " response
+read -r -p "$(echo -e $GREEN"This will delete the current partition table on $DISK. Do you agree [y/N]?" $ENDCOLOR)" response
 response=${response,,}
 if [[ ! ("$response" =~ ^(yes|y)$) ]]; then
-    echo "Quitting."
+    echo -e "$RED Quitting. $ENDCOLOR"
     exit
 fi
 
@@ -68,7 +74,7 @@ read -r -p "Please enter name for a user account (leave empty to skip): " userna
 echo
 # Setting password.
 if [[ -n $username ]]; then
-    read -r -p "Please enter a password for the user account: " password
+    read -r -p -s "Please enter a password for the user account: " password
 fi
 
 echo
