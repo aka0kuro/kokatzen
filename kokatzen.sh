@@ -3,6 +3,14 @@
 # Cleaning the TTY.
 clear
 
+echo -e "\e[31m
+██   ██  ██████   ██   ██   █████   ███████  ███████  ███    ██
+██   ██  ██   ██  ██   ██  ██   ██  ██       ██       ████   ██
+███████  ██████   ███████  ███████  █████    █████    ██ ██  ██
+██   ██  ██   ██  ██   ██  ██   ██  ██       ██       ██  ██ ██
+██   ██  ██   ██  ██   ██  ██   ██  ███████  ███████  ██   ████
+\e[0m"
+
 # Selecting the target for the installation.
 PS3="Select the disk where Arch Linux is going to be installed: "
 select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|vd|mm");
