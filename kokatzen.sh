@@ -1,8 +1,5 @@
 #!/usr/bin/env -S bash -e
 
-# Cleaning the TTY.
-clear
-
 logo () { 
 echo -e "\e[31m
 ██╗  ██╗ ██████╗ ██╗  ██╗ █████╗ ████████╗███████╗███████╗███╗   ██╗
@@ -14,6 +11,7 @@ echo -e "\e[31m
 \e[0m"
 }
 
+clear
 logo
 echo
 # Selecting the target for the installation.
