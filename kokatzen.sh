@@ -3,6 +3,7 @@
 # Cleaning the TTY.
 clear
 
+logo (){ 
 echo -e "\e[31m
 ██╗  ██╗ ██████╗ ██╗  ██╗ █████╗ ████████╗███████╗███████╗███╗   ██╗
 ██║ ██╔╝██╔═══██╗██║ ██╔╝██╔══██╗╚══██╔══╝╚══███╔╝██╔════╝████╗  ██║
@@ -11,6 +12,7 @@ echo -e "\e[31m
 ██║  ██╗╚██████╔╝██║  ██╗██║  ██║   ██║   ███████╗███████╗██║ ╚████║
 ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝╚═╝  ╚═══╝
 \e[0m"
+}
 
 # Selecting the target for the installation.
 PS3="Select the disk where Arch Linux is going to be installed: "
@@ -51,30 +53,43 @@ kernel_selector () {
             kernel_selector
     esac
 }
+clear
+logo
 
+echo "Selecting the kernel to install."
+kernel_selector
+
+clear
+logo
+echo "Selecting the installation method."
 # Setting username.
 read -r -p "Please enter name for a user account (leave empty to skip): " username
 
+echo
 # Setting password.
 if [[ -n $username ]]; then
     read -r -p "Please enter a password for the user account: " password
 fi
 
+echo
 # Choose locales.
 read -r -p "Please insert the locale you use in this format (xx_XX): " locale
 
+echo
 # Choose keyboard layout.
 read -r -p "Please insert the keyboard layout you use: " kblayout
 
+echo
 # Choose timezone.
 read -r -p "Please insert the timezone you use: (Europe/Madrid)" timezone
 
+echo
 # Choose languaje.
 read -r -p "Please insert the language you use: (en_US.UTF-8)" language
 
 BASE_PKGS="base sudo linux-firmware iptables-nft python nano git python linux-$kernel_selector-headers networkmanager dosfstools e2fsprogs btrfs-progs man-db"
 
-
+echo
 read -p "Press Enter to continue, otherwise press any other key. " start_install
 
 if [[ -n $start_install ]] ; then
@@ -307,3 +322,4 @@ if [[ -n $swap_id ]] ; then
     cryptsetup luksDump $swap_part 2> /dev/null
     wipefs --all $swap_part 2> /dev/null
 fi
+
