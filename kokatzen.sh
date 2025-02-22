@@ -156,9 +156,6 @@ done
 }
 disk
 
-echo
-read -p "$(echo -e $GREEN"Press Enter to continue, otherwise press any other key. " $ENDCOLOR)" start_install
-
 if [[ -n $start_install ]] ; then
     exit 1
 fi
@@ -241,7 +238,7 @@ if [[ $? -ne 0 ]] ; then
     
     # Scan for available networks
     echo -e "${GREEN}Scanning for Wi-Fi networks...${ENDCOLOR}"
-    iwctl station "$interface" scan
+    iwctl station "$interface" scan 2> /dev/null
     sleep 2
     
     # Get list of available networks
@@ -277,7 +274,7 @@ if [[ $? -ne 0 ]] ; then
     echo
     
     # Connect to the Wi-Fi network
-    iwctl station "$interface" connect "$network" --passphrase "$password"
+    iwctl station "$interface" connect "$network" --passphrase "$password" 2> /dev/null
     
     echo -e "${GREEN}Attempting to connect to $network...${ENDCOLOR}"
     sleep 3
