@@ -24,22 +24,22 @@ $ENDCOLOR"
 infomation () {
 clear
 logo
-password () {
-	echo
-	# Setting password.
-	if [[ -n $username ]]; then
-		read -s -p "$(echo -e $GREEN"Enter your password: " $ENDCOLOR)" password
-		echo -e "\n"
-		
-		read -s -p "$(echo -e $GREEN"Confir your password: " $ENDCOLOR)" password_confirm
-		echo -e "\n"
-	fi
-	if [[ "$password" == "$password_confirm" ]]; then
-	    echo -e "${GREEN}Passwords match.$ENDCOLOR"
-	else
-	    echo -e "${RED}Passwords do not match.$ENDCOLOR" && sleep 3 && clear && logo && password
-	fi
-}
+	password () {
+		echo
+		# Setting password.
+		if [[ -n $username ]]; then
+			read -s -p "$(echo -e $GREEN"Enter your password: " $ENDCOLOR)" password
+			echo -e "\n"
+			
+			read -s -p "$(echo -e $GREEN"Confir your password: " $ENDCOLOR)" password_confirm
+			echo -e "\n"
+		fi
+		if [[ "$password" == "$password_confirm" ]]; then
+		    echo -e "${GREEN}Passwords match.$ENDCOLOR"
+		else
+		    echo -e "${RED}Passwords do not match.$ENDCOLOR" && sleep 3 && clear && logo && password
+		fi
+	}
 echo -e "${GREEN}Selecting the installation method. $ENDCOLOR"
 # Setting username.
 read -r -p "$(echo -e $GREEN"Please enter name for a user account ${RED}(leave empty to skip)${GREEN}: "$ENDCOLOR)" username
