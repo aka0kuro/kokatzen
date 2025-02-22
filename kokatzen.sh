@@ -74,10 +74,10 @@ kernel_selector () {
 	echo -e "${BLUE}Selecting the kernel to install. $ENDCOLOR"
 	echo
     echo -e "${GREEN}List of kernels: $ENDCOLOR"
-    echo -e "${RED}1)$GREEN Stable — Vanilla Linux kernel and modules, with a few patches applied. $ENDCOLOR"
-    echo -e "${RED}2)$GREEN Hardened — A security-focused Linux kernel. $ENDCOLOR"
-    echo -e "${RED}3)$GREEN Longterm — Long-term support (LTS) Linux kernel and modules. $ENDCOLOR"
-    echo -e "${RED}4)$GREEN Zen Kernel — Optimized for desktop usage. $ENDCOLOR"
+    echo -e "${RED}1)$GREEN Stable ‚ÄĒ Vanilla Linux kernel and modules, with a few patches applied. $ENDCOLOR"
+    echo -e "${RED}2)$GREEN Hardened ‚ÄĒ A security-focused Linux kernel. $ENDCOLOR"
+    echo -e "${RED}3)$GREEN Longterm ‚ÄĒ Long-term support (LTS) Linux kernel and modules. $ENDCOLOR"
+    echo -e "${RED}4)$GREEN Zen Kernel ‚ÄĒ Optimized for desktop usage. $ENDCOLOR"
     read -r -p "Insert the number of the corresponding kernel: " choice
 
     case $choice in
@@ -129,7 +129,7 @@ disk () {
 		echo -e "${GREEN}Please select a disk (1-${counter}):${ENDCOLOR}"
 		read -r selection
 
-		# Validar selección
+		# Validar selecci√≥n
 		if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -lt "$counter" ]; then
 			DISK=${disk_array[$selection-1]}
 			echo
@@ -195,99 +195,43 @@ if [[ $secure_boot == y ]] ; then
     fi
 fi
 
-ping -c 1 archlinux.org > /dev/null
+# Verificación de conexión a Internet con reintento
+ping -c 1 archlinux.org 2> /dev/null
 if [[ $? -ne 0 ]] ; then
-    # Function to prompt the user to retry or exit
+    # Función para reintentar o salir
     retry_or_exit() {
         echo -e "${GREEN}Do you want to try again? ${RED}(y/n)${ENDCOLOR}"
         read -r choice
         case "$choice" in
-            y|Y) return 0 ;;
-            n|N) echo "${RED}Exiting...${ENDCOLOR}"; exit 1 ;;
-            *) echo -e "${GREEN}Invalid choice. Exiting...${ENDCOLOR}"; exit 1 ;;
+            y|Y) 
+                # Reintentar la conexión
+                ping -c 1 archlinux.org 2> /dev/null
+                if [[ $? -ne 0 ]]; then
+                    echo -e "${RED}Still no internet connection.${ENDCOLOR}"
+                    retry_or_exit
+                else
+                    echo -e "${GREEN}Internet connection established.${ENDCOLOR}"
+                    return 0
+                fi
+                ;;
+            n|N) 
+                echo -e "${RED}Continuing without internet connection.${ENDCOLOR}"
+                return 0
+                ;;
+            *) 
+                echo -e "${RED}Invalid choice. Please try again.${ENDCOLOR}"
+                retry_or_exit
+                ;;
         esac
     }
     
-    # Get available Wi-Fi interfaces
-    interfaces=($(iwctl device list | awk '/wlan/ {print $2}'))
-    
-    # Check if any Wi-Fi interfaces were found
-    if [ ${#interfaces[@]} -eq 0 ]; then
-        echo -e "${RED}No Wi-Fi interfaces detected. Is your Wi-Fi card enabled?${ENDCOLOR}"
-        exit 1
-    fi
-    
-    # Display interfaces and allow the user to select one
-    while true; do
-        echo -e "${GREEN}Detected Wi-Fi interfaces:${ENDCOLOR}"
-        for i in "${!interfaces[@]}"; do
-            echo -e "${RED}[$i] ${interfaces[$i]}${ENDCOLOR}"
-        done
-    
-        read -p "$(echo -e $GREEN"Select the number of the Wi-Fi interface: " $ENDCOLOR)" index
-    
-        if [[ "$index" =~ ^[0-9]+$ ]] && [ "$index" -lt "${#interfaces[@]}" ]; then
-            interface="${interfaces[$index]}"
-            echo -e "${GREEN}Using interface: $interface${ENDCOLOR}"
-            break
-        else
-            echo -e "${RED}Invalid selection.${ENDCOLOR}"
-            retry_or_exit
-        fi
-    done
-    
-    # Scan for available networks
-    echo -e "${GREEN}Scanning for Wi-Fi networks...${ENDCOLOR}"
-    iwctl station "$interface" scan 2> /dev/null
-    sleep 2
-    
-    # Get list of available networks
-    networks=($(iwctl station "$interface" get-networks | awk -F '  +' 'NR>5 {print $2}'))
-    
-    # Check if any networks were found
-    if [ ${#networks[@]} -eq 0 ]; then
-        echo -e "${RED}No Wi-Fi networks found. Try again.${ENDCOLOR}"
-        retry_or_exit
-    fi
-    
-    # Display available networks and allow the user to select one
-    while true; do
-        echo -e "${GREEN}Detected Wi-Fi networks:${ENDCOLOR}"
-        for i in "${!networks[@]}"; do
-            echo -e "${GREEN}[$i] ${networks[$i]}${ENDCOLOR}"
-        done
-    
-        read -p "$(echo -e $GREEN"Select the number of the Wi-Fi network to connect to: " $ENDCOLOR)" net_index
-    
-        if [[ "$net_index" =~ ^[0-9]+$ ]] && [ "$net_index" -lt "${#networks[@]}" ]; then
-            network="${networks[$net_index]}"
-            echo -e "${GREEN}Connecting to: ${RED}$network${ENDCOLOR}"
-            break
-        else
-            echo "${RED}Invalid selection.${ENDCOLOR}"
-            retry_or_exit
-        fi
-    done
-    
-    # Request Wi-Fi password
-    read -s -p "$(echo -e $GREEN"Enter the password for $network: " $ENDCOLOR)" password
-    echo
-    
-    # Connect to the Wi-Fi network
-    iwctl station "$interface" connect "$network" --passphrase "$password" 2> /dev/null
-    
-    echo -e "${GREEN}Attempting to connect to $network...${ENDCOLOR}"
-    sleep 3
-    
-    # Check if the connection was successful
-    if iwctl station "$interface" show | grep -q "connected"; then
-        echo "Successfully connected to $network."
-    else
-        echo "Failed to connect to $network."
-        retry_or_exit
-    fi
+    echo -e "${RED}No internet connection detected.${ENDCOLOR}"
+    retry_or_exit
 else
-    echo "Internet OK."
+    echo
+    echo -e "${GREEN}Internet OK.${ENDCOLOR}"
+    echo
+    sleep 2
 fi
 
 # Checking the microcode to install.
