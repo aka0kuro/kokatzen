@@ -195,36 +195,36 @@ if [[ $secure_boot == y ]] ; then
     fi
 fi
 
+# Función para reintentar o salir
+retry_or_exit() {
+	echo -e "${GREEN}Do you want to try again? ${RED}(y/n)${ENDCOLOR}"
+	read -r choice
+	case "$choice" in
+		y|Y) 
+			# Reintentar la conexión
+			ping -c 1 archlinux.org 2> /dev/null
+			if [[ $? -ne 0 ]]; then
+				echo -e "${RED}Still no internet connection.${ENDCOLOR}"
+				retry_or_exit
+			else
+				echo -e "${GREEN}Internet connection established.${ENDCOLOR}"
+				return 0
+			fi
+			;;
+		n|N) 
+			echo -e "${RED}Continuing without internet connection.${ENDCOLOR}"
+			return 0
+			;;
+		*) 
+			echo -e "${RED}Invalid choice. Please try again.${ENDCOLOR}"
+			retry_or_exit
+			;;
+	esac
+}
+
 # Verificación de conexión a Internet con reintento
 ping -c 1 archlinux.org 2> /dev/null
-if [[ $? -ne 0 ]] ; then
-    # Función para reintentar o salir
-    retry_or_exit() {
-        echo -e "${GREEN}Do you want to try again? ${RED}(y/n)${ENDCOLOR}"
-        read -r choice
-        case "$choice" in
-            y|Y) 
-                # Reintentar la conexión
-                ping -c 1 archlinux.org 2> /dev/null
-                if [[ $? -ne 0 ]]; then
-                    echo -e "${RED}Still no internet connection.${ENDCOLOR}"
-                    retry_or_exit
-                else
-                    echo -e "${GREEN}Internet connection established.${ENDCOLOR}"
-                    return 0
-                fi
-                ;;
-            n|N) 
-                echo -e "${RED}Continuing without internet connection.${ENDCOLOR}"
-                return 0
-                ;;
-            *) 
-                echo -e "${RED}Invalid choice. Please try again.${ENDCOLOR}"
-                retry_or_exit
-                ;;
-        esac
-    }
-    
+if [[ $? -ne 0 ]] ; then    
     echo -e "${RED}No internet connection detected.${ENDCOLOR}"
     retry_or_exit
 else
