@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -e
+#!/usr/bin/bash
 
 # Cleaning the TTY.
 clear
@@ -24,25 +24,26 @@ $ENDCOLOR"
 infomation () {
 clear
 logo
-	password () {
-		echo
-		# Setting password.
-		if [[ -n $username ]]; then
-			read -s -p "$(echo -e $GREEN"Enter your password: " $ENDCOLOR)" password
-			echo -e "\n"
-			
-			read -s -p "$(echo -e $GREEN"Confir your password: " $ENDCOLOR)" password_confirm
-			echo -e "\n"
-		fi
-		if [[ "$password" == "$password_confirm" ]]; then
-		    echo -e "${GREEN}Passwords match.$ENDCOLOR"
-		else
-		    echo -e "${RED}Passwords do not match.$ENDCOLOR" && sleep 3 && clear && logo && password
-		fi
-	}
+
 echo -e "${GREEN}Selecting the installation method. $ENDCOLOR"
 # Setting username.
 read -r -p "$(echo -e $GREEN"Please enter name for a user account ${RED}(leave empty to skip)${GREEN}: "$ENDCOLOR)" username
+password () {
+	echo
+	# Setting password.
+	if [[ -n $username ]]; then
+		read -s -p "$(echo -e $GREEN"Enter your password: " $ENDCOLOR)" password
+		echo -e "\n"
+			
+		read -s -p "$(echo -e $GREEN"Confir your password: " $ENDCOLOR)" password_confirm
+		echo -e "\n"
+	fi
+	if [[ "$password" == "$password_confirm" ]]; then
+		echo -e "${GREEN}Passwords match.$ENDCOLOR"
+	else
+		echo -e "${RED}Passwords do not match.$ENDCOLOR" && sleep 3 && clear && logo && password
+	fi
+}
 password
 
 echo
@@ -278,7 +279,7 @@ efi_part=$(echo "$partitions" | awk "\$1 == $efi_id { print \$2}")
 
 # root partition
 echo -e "\n\nTell me the root partition number:"
-echo "$partitions"
+echo "${BLUE}$partitions${ENDCOLOR}"
 read -p "$(echo -e $GREEN"Enter a number: " $ENDCOLOR)" root_id
 root_part=$(echo "$partitions" | awk "\$1 == $root_id { print \$2}")
 
@@ -304,5 +305,3 @@ if [[ -n $swap_id ]] ; then
     cryptsetup luksDump $swap_part 2> /dev/null
     wipefs --all $swap_part 2> /dev/null
 fi
-
-
