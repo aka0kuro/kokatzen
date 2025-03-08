@@ -1,5 +1,6 @@
 import curses
 import subprocess
+import time
 
 def draw_menu(stdscr, selected_row_idx, options, title):
     stdscr.clear()
@@ -20,7 +21,8 @@ def draw_menu(stdscr, selected_row_idx, options, title):
 
     stdscr.refresh()
 
-def show_message(stdscr, message, ascii_art=None):
+
+def show_message(stdscr, message, ascii_art=None, delay=3):
     """Muestra un mensaje y opcionalmente arte ASCII en la pantalla con colores."""
     stdscr.clear()
     h, w = stdscr.getmaxyx()
@@ -43,12 +45,9 @@ def show_message(stdscr, message, ascii_art=None):
     stdscr.addstr(msg_y, w // 2 - len(message) // 2, message, curses.color_pair(2))  # Aplicar color cyan
     stdscr.refresh()
 
-    # Esperar a que el usuario presione Enter (tecla 10 o 13)
-    while True:
-        key = stdscr.getch()
-        if key in [10, 13]:  # Enter
-            break
 
+    # Esperar un tiempo específico (en segundos)
+    time.sleep(delay)
 
 def ping_device(stdscr, device):
     """Realiza un ping a un servidor usando el dispositivo seleccionado."""
@@ -56,7 +55,7 @@ def ping_device(stdscr, device):
     try:
         # Usar el comando `ping` con 4 paquetes
         subprocess.run(
-            ["ping", "-c", "4", "-I", device, "archlinux.org"],
+            ["ping", "-c", "4", "-I", device, "google.com"],
             stdout=subprocess.DEVNULL,  # Ocultar la salida estándar
             stderr=subprocess.DEVNULL,  # Ocultar la salida de error
             check=True,
@@ -66,7 +65,6 @@ def ping_device(stdscr, device):
     except subprocess.CalledProcessError:
         show_message(stdscr, f"Error al hacer ping con {device}.")
         return False  # Ping fallido
-
 
 def connect_wifi(stdscr):
     """Conecta a una red Wi-Fi usando `iwctl`."""
@@ -129,14 +127,6 @@ def get_network_devices():
         return devices
     except subprocess.CalledProcessError:
         return []
-
-def partition_disk(stdscr):
-    show_message(stdscr, "Particionando disco... (Simulación)")
-    # Aquí podrías agregar lógica real para particionar el disco
-
-def install_system(stdscr):
-    show_message(stdscr, "Instalando sistema... (Simulación)")
-    # Aquí podrías agregar lógica real para instalar el sistema
 
 def main_menu(stdscr):
     curses.curs_set(0)
