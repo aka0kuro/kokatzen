@@ -49,18 +49,6 @@ def show_message(stdscr, message, ascii_art=None):
         if key in [10, 13]:  # Enter
             break
 
-def get_network_devices():
-
-    try:
-        result = subprocess.run(["ip", "link", "show"], capture_output=True, text=True, check=True)
-        devices = []
-        for line in result.stdout.splitlines():
-            if "state" in line:
-                device = line.split(":")[1].strip()
-                devices.append(device)
-        return devices
-    except subprocess.CalledProcessError:
-        return []
 
 def ping_device(stdscr, device):
     """Realiza un ping a un servidor usando el dispositivo seleccionado."""
@@ -68,7 +56,7 @@ def ping_device(stdscr, device):
     try:
         # Usar el comando `ping` con 4 paquetes
         subprocess.run(
-            ["ping", "-c", "4", "-I", device, "google.com"],
+            ["ping", "-c", "4", "-I", device, "archlinux.org"],
             stdout=subprocess.DEVNULL,  # Ocultar la salida estándar
             stderr=subprocess.DEVNULL,  # Ocultar la salida de error
             check=True,
@@ -78,6 +66,7 @@ def ping_device(stdscr, device):
     except subprocess.CalledProcessError:
         show_message(stdscr, f"Error al hacer ping con {device}.")
         return False  # Ping fallido
+
 
 def connect_wifi(stdscr):
     """Conecta a una red Wi-Fi usando `iwctl`."""
@@ -99,24 +88,31 @@ def connect_wifi(stdscr):
     except subprocess.CalledProcessError:
         show_message(stdscr, "Error al conectar a Wi-Fi.")
 
+def check_internet_connection(stdscr, devices):
+    """Verifica la conexión a Internet en todas las interfaces de red."""
+    for device in devices:
+        if device != "lo":  # Ignorar la interfaz de loopback
+            if ping_device(stdscr, device):
+                return True  # Hay conexión a Internet
+    return False  # No hay conexión a Internet
+
 def configure_network(stdscr):
-    """Configura la red, verificando la conexión con ping antes de proceder."""
+    """Configura la red, verificando la conexión en todas las interfaces."""
     devices = get_network_devices()
     if not devices:
         show_message(stdscr, "No se encontraron dispositivos de red.")
         return
 
-    # Verificar si ya hay conexión a Internet
-    if "wlan0" in devices:
-        if ping_device(stdscr, "wlan0"):
-            show_message(stdscr, "Ya estás conectado a Internet.")
-            return
+    # Verificar si hay conexión a Internet en alguna interfaz
+    if check_internet_connection(stdscr, devices):
+        show_message(stdscr, "Ya estás conectado a Internet.")
+        return
 
-    # Si no hay conexión, intentar conectar a Wi-Fi
+    # Si no hay conexión, intentar conectar a Wi-Fi (si existe wlan0)
     if "wlan0" in devices:
         connect_wifi(stdscr)
         # Verificar nuevamente la conexión después de conectar a Wi-Fi
-        if not ping_device(stdscr, "wlan0"):
+        if not check_internet_connection(stdscr, devices):
             show_message(stdscr, "No se pudo establecer conexión a Internet.")
     else:
         show_message(stdscr, "No se encontró un dispositivo Wi-Fi (wlan0).")
